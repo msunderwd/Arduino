@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <string.h>
 
+// Include the necessary libraries for the different display shields.
 #if (LCD_DISPLAY_TYPE == LCD_DISPLAY_TYPE_OSEPP)
 #include <LiquidCrystal.h>
 #include <LCDKeypad.h>
@@ -11,18 +12,23 @@
 #error CANNOT COMPILE -- INVALID LCD LIBRARY SELECTED
 #endif
 
+// Include our own header with definitions and such.
 #include "LCD.h"
 
+// Create the local object of the display we are
+// controlling.
 #if (LCD_DISPLAY_TYPE == LCD_DISPLAY_TYPE_OSEPP)
 static LCDKeypad lcd = LCDKeypad();
 #elif (LCD_DISPLAY_TYPE == LCD_DISPLAY_TYPE_ADAFRUIT)
 static Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
 #endif
 
+// Define the size of the display.  Pretty much assumes
+// 16x2 but could be modded to change that.
 #define LCD_NUM_ROWS 2
 #define LCD_NUM_COLS 16
-static char display[LCD_NUM_ROWS][LCD_NUM_COLS+1];
 
+// State machine for handling processing of the buttons.
 #define DISPLAY_STATE_RUN 0
 #define DISPLAY_STATE_DEBOUNCE 1
 #define DISPLAY_STATE_DEBOUNCE_COMPLETE 2
@@ -30,45 +36,27 @@ static char display[LCD_NUM_ROWS][LCD_NUM_COLS+1];
 #define DISPLAY_STATE_LONG_DEBOUNCE_COMPLETE 4
 #define DISPLAY_STATE_LONG_DEBOUNCE_WAIT 5
 
-#define LONG_PRESS_MS 2000
-
+// ctor
 LCD::LCD() {
   // Nothing to do ... yet ...
-  buttonVal = KEYS_NONE;
-  displayState = DISPLAY_STATE_RUN;
 }
 
+// Setup function.  Call from setup()
 void LCD::begin() {
+  buttonVal = KEYS_NONE;
+  displayState = DISPLAY_STATE_RUN;
   lcd.begin(LCD_NUM_COLS, LCD_NUM_ROWS);
 }
 
-void LCD::clear() {
-  lcd.clear();
+// Run loop for processing the buttons.  Call from loop()
+void LCD::run() {
+  debounceButtons();
 }
 
-void LCD::run() {
-  //int bv = debounceButtons();
-  debounceButtons();
-  // buttonVal is set within debounceButtons() at the right time.
-  // Not sure yet what needs done here.  For now it's optional.
-  /*
-  switch(displayState) {
-  case DISPLAY_STATE_LONG_DEBOUNCE_COMPLETE:
-    buttonVal = bv;
-    displayState = DISPLAY_STATE_LONG_DEBOUNCE_WAIT;
-    break;
-  case DISPLAY_STATE_DEBOUNCE_COMPLETE:
-    buttonVal = bv;
-    displayState = DISPLAY_STATE_RUN;
-    break;
-  case DISPLAY_STATE_LONG_DEBOUNCE:
-  case DISPLAY_STATE_RUN:
-  case DISPLAY_STATE_DEBOUNCE:
-  case DISPLAY_STATE_LONG_DEBOUNCE_WAIT:
-  default:
-    break;
-  }
-  */
+//------------------------------------------------
+// Pass-through methods for handling the display
+void LCD::clear() {
+  lcd.clear();
 }
 
 void LCD::setCursor(int c, int r) {
@@ -83,21 +71,37 @@ void LCD::noBlink() {
   lcd.noBlink();
 }
 
+void LCD::cursor() {
+  lcd.cursor();
+}
+
+void LCD::noCursor() {
+  lcd.noCursor();
+}
+
+//------------------------------------------------
+// Custom methods
+
+// Update the two lines of the display with these two strings.
 void LCD::updateDisplay(char *row1, char *row2) {
   lcd.clear();
-  sprintf(display[0],"%s", row1);
-  sprintf(display[1],"%s", row2);
-  lcd.setCursor(0,0); lcd.print(display[0]);
-  lcd.setCursor(0,1); lcd.print(display[1]);
+  lcd.setCursor(0,0); lcd.print(row1);
+  lcd.setCursor(0,1); lcd.print(row2);
 }
 
 
+// Get the current button value.
 int LCD::getButtons() {
   int bv = buttonVal;
   buttonVal = KEYS_NONE;
   return(bv);
 }
 
+//------------------------------------------------
+// Private / Protected internal methods
+
+// Retrieve the hardware button value and translate
+// it into one of our "standard" button values.
 int LCD::getButton() {
 #if (LCD_DISPLAY_TYPE == LCD_DISPLAY_TYPE_OSEPP)
   // OSEPP LCDKeypad
@@ -126,6 +130,7 @@ int LCD::getButton() {
 #endif
 }
 
+// Debounce the button press and figure out if it's a long press.
 void LCD::debounceButtons() {
   int button = getButton();
   static long startDebounce;
@@ -140,7 +145,6 @@ void LCD::debounceButtons() {
       displayState = DISPLAY_STATE_DEBOUNCE;
     }
     // Always return KEYS_NONE from this state
-    //return(KEYS_NONE);
     break;
 
   case DISPLAY_STATE_DEBOUNCE:
@@ -165,7 +169,6 @@ void LCD::debounceButtons() {
       buttonVal = keyval;
       keyval = KEYS_NONE;
       Serial.println("2 second button press! Val = " + String(buttonVal));
-      //return(buttonVal);
       
     } else if (button == KEYS_NONE) {
       // Short press.
@@ -173,12 +176,8 @@ void LCD::debounceButtons() {
       // Debounce complete. Decide if it's long or not.
       displayState = DISPLAY_STATE_DEBOUNCE_COMPLETE;
       buttonVal = keyval;
-      //retv = keyval;
-      //keyval = KEYS_NONE;
-      //return(buttonVal);
     } else {
-      // Not finished debouncing yet.
-      //return(KEYS_NONE);
+      // Not finished debouncing yet. Do nothing.
     } // KEYS_NONE
     break;
     
@@ -190,10 +189,7 @@ void LCD::debounceButtons() {
       displayState = DISPLAY_STATE_RUN;
       buttonVal = KEYS_NONE;
     }
-    //return(KEYS_NONE);
     break;
 
-    //return(keyval);
-    //break;
   } // switch(displayState)
 }
