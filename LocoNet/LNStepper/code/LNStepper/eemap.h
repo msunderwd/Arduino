@@ -1,0 +1,7 @@
+// EEPROM Memory Map
+
+#include "config.h"
+
+#define EEPROM_NUM_POSITIONS 0
+#define EEPROM_POSITION_BASE (EEPROM_NUM_POSITIONS * sizeof(int))
+#define EEPROM_NEXT_AVAILABLE ((EEPROM_STEP_POSITION_BASE + MAX_NUM_POSITIONS) * sizeof(long))
