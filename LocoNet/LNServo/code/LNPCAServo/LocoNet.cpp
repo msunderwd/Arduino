@@ -11,6 +11,9 @@
 #include "eeprom.hpp"
 #include "lnaddr.h"
 
+unsigned int address_received;
+//unsigned int decoder_cv_address;
+
 void sendLnCVReply(lnMsg *Packet, byte status, byte data);
 void write_cv(unsigned int cv, unsigned int data);
 byte read_cv(unsigned int cv);
@@ -27,7 +30,8 @@ bool addressMatch(unsigned int a) {
 bool addressIsServo(unsigned int a) {
   for (int i = 0; i < NUM_SERVOS; i++) {
     if (Servos[i].address() == a) {
-      Serial.println("Servo found: a = " + String(a) + " Servo = " + String(i) + " SA = " + String(Servos[i].address()));
+      Serial.print(F("Servo found: a = ")); Serial.print(a); Serial.print(F(" Servo = ")); Serial.print(i);
+      Serial.print(F(" SA = ")); Serial.println(Servos[i].address());
       return(true);
     }
   }
@@ -37,7 +41,8 @@ bool addressIsServo(unsigned int a) {
 bool addressIsLock(unsigned int a) {
   for (int i = 0; i < NUM_SERVOS; i++) {
     if (Servos[i].lockAddress() == a) {
-      Serial.println("Lock found: a = " + String(a) + " Lock = " + String(i) + " LA = " + String(Servos[i].lockAddress()));
+      Serial.print(F("Lock found: a = ")); Serial.print(a); Serial.print(F(" Lock = ")); Serial.print(i);
+      Serial.print(F(" LA = ")); Serial.print(Servos[i].lockAddress());
       return(true);
     }
   }
@@ -76,12 +81,11 @@ void handleLocoNetInterface(lnMsg *Packet) {
             printRXpacket(Packet);
             Serial.println(F("State 0 - Received 0xB0 or BD : Handle signal or servo change"));
             // If 0xBD then send feedback. If 0xB0, do not.
-            // Assume servo and lock addresses are adjacent and monotonic.
             if ( addressIsServo(address_received) && ((Packet->data[2] & 0x10) > 0)) {
-              Serial.print(F("Handling Servo Change: address = ")); Serial.println(String(address_received));
+              Serial.print(F("Handling Servo Change: address = ")); Serial.println(address_received);
               handleLNServoChange(address_received, Packet->data[2], (Packet->data[0] == 0xBD));
             } else if (addressIsLock(address_received) && ((Packet->data[2] & 0x10) > 0) ) {
-              Serial.print(F("Handling Lock Change: address = ")); Serial.println(String(address_received));
+              Serial.print(F("Handling Lock Change: address = ")); Serial.println(address_received);
               handleLockChange(address_received, Packet->data[2], (Packet->data[0] == 0xBD));
             } else {
               if (((Packet->data[2] & 0x10) > 0)) {
@@ -106,7 +110,8 @@ void handleLocoNetInterface(lnMsg *Packet) {
         break;
             
               
-      case 0xEF: // OPC_WR_SL_DATA
+      case 0xEF: // OPC_WR_SL_DATA -- not supported just yet
+/*
         // 0xEF 0x0E 0x7C <PCMD><0><HOPSA><LOPSA><TRK><CVH><CVL><DATA7><0><0><CHK>
         // Write to programming track.  First, check if this is our address...
         printRXpacket(Packet);
@@ -151,6 +156,7 @@ void handleLocoNetInterface(lnMsg *Packet) {
               break;
           }
         }
+        */
         break;
       
       default:
@@ -163,11 +169,11 @@ void handleLocoNetInterface(lnMsg *Packet) {
 
 unsigned int decodeLnAddress(lnMsg *msg) {
   /*
-  Serial.print("decode data[1] = " + String(msg->data[1]));
-  Serial.print(" data[2] = " + String(msg->data[2]));
-  Serial.print(" d1 = " + String(msg->data[1] & 0x7F));
-  Serial.println(" d2 = " + String(msg->data[2] & 0x0F));
-  Serial.println("Final addr = " + String((msg->data[1] & 0x7F) + ((msg->data[2] & 0x0F) << 7)));
+  Serial.print(F("decode data[1] = ")); Serial.print(msg->data[1]);
+  Serial.print(F(" data[2] = ")); Serial.print(msg->data[2]);
+  Serial.print(F(" d1 = ")); Serial.print(msg->data[1] & 0x7F);
+  Serial.print(F(" d2 = ")); Serial.print(msg->data[2] & 0x0F);
+  Serial.print(F("Final addr = ")); Serial.print((msg->data[1] & 0x7F) + ((msg->data[2] & 0x0F) << 7));
   */
   return((msg->data[1] & 0x7F) + ((msg->data[2] & 0x0F) << 7) + 1);
 }
@@ -179,15 +185,16 @@ void printRXpacket (lnMsg *packet)
 #else
     uint8_t Length = getLnMsgSize( packet ) ;  
 #endif
-    Serial.print("RX: ");
+    Serial.print(F("RX: "));
     for( uint8_t Index = 0; Index < Length; Index++ )
     {
       Serial.print(packet->data[ Index ], HEX);
-      Serial.print("  ");
+      Serial.print(F("  "));
      } 
     Serial.println();
 }
 
+/*
 void sendLnCVReply(lnMsg *Packet, byte status, byte data) {
     // <CVH> includes Data bit 7 in its bit 2.
     // <DATA7> includes only bits 6-0 of the data
@@ -197,6 +204,7 @@ void sendLnCVReply(lnMsg *Packet, byte status, byte data) {
         Packet->data[9] ^ (data & 0x7F) ^ 0x00 ^ 0x00);
 
   uint8_t start = LnTxBuffer.WriteIndex;
+  */
 /*    
     addByteLnBuf( &LnTxBuffer, 0xE7 ) ;
     addByteLnBuf( &LnTxBuffer, 0x0E ) ;
@@ -213,6 +221,7 @@ void sendLnCVReply(lnMsg *Packet, byte status, byte data) {
     addByteLnBuf( &LnTxBuffer, Packet->data[12] ) ;
     addByteLnBuf( &LnTxBuffer, 0xFF - checksum ) ;
 */
+/*
     LnPacket->data[0] = 0xE7;
     LnPacket->data[1] = 0x0E;
     LnPacket->data[2] = 0x7C;
@@ -251,6 +260,7 @@ void sendLnCVReply(lnMsg *Packet, byte status, byte data) {
       Serial.println(" ");
      }
 }
+*/
 
 void sendTXtoLN (byte opcode, byte firstbyte, byte secondbyte) 
 {
@@ -268,24 +278,20 @@ void sendTXtoLN (byte opcode, byte firstbyte, byte secondbyte)
     {
         // Send the packet to the LocoNet
       LocoNet.send( LnPacket );
-      Serial.print("TX: ");
+      Serial.print(F("TX: "));
       Serial.print(opcode, HEX);
-      Serial.print("  ");
+      Serial.print(F("  "));
       Serial.print(firstbyte, HEX);
-      Serial.print("  ");
+      Serial.print(F("  "));
       Serial.print(secondbyte, HEX);
-      Serial.print("  ");
+      Serial.print(F("  "));
       Serial.print(checksum, HEX);
       Serial.println();
 
      }
 }
 
-bool addressIsMine(unsigned int addr) {
-  //return((addr >= base_address) && (addr < base_address + NUM_SIGNAL_SUBADDRS + NUM_SERVOS + NUM_LOCKS));
-  return(true);
-}
-
+/*
 void write_cv(unsigned int cv, unsigned int data) {
   Serial.println("Writing to CV: " + String(cv) + " Val: " + String(data));
   switch(cv) {
@@ -324,7 +330,7 @@ byte read_cv(unsigned int cv) {
     case CV_DECODER_ADDRESS_MSB:
       val = readCVFromEEPROM(EEPROM_CV_DECODER_ADDRESS_MSB); break;
     case CV_ACC_DECODER_CONFIG:
-      val = 0x88; /* CV29 is read only, fixed value in this case */
+      val = 0x88; // CV29 is read only, fixed value in this case 
     case CV_HEAD1_FUNCTION:
       val = readCVFromEEPROM(EEPROM_CV_HEAD1_FUNCTION); break;
     case CV_HEAD2_FUNCTION:
@@ -347,7 +353,9 @@ byte read_cv(unsigned int cv) {
   Serial.println("Reading CV: " + String(cv) + " Val: " + String(val));
   return(val);
 }
+*/
 
+/*
 void reportSensorState(byte sensor, bool state) {
   byte byte1, byte2;
   byte1 = ((sensor_base_address + sensor) & 0xFF) >> 1; // A7-A1
@@ -357,6 +365,7 @@ void reportSensorState(byte sensor, bool state) {
   Serial.println("RSS: Sensor " + String(sensor) + "state " + String(state));
   sendTXtoLN(OPC_INPUT_REP, byte1, byte2); // OPC_SW_REP -- Sensor Report    
 }
+*/
 
 void reportTurnoutState(unsigned int addr, bool isThrown) {
   byte byte1, byte2;
@@ -365,8 +374,8 @@ void reportTurnoutState(unsigned int addr, bool isThrown) {
   byte2 |= ((addr & 0x01) ? 0x20 : 0x00); // A0 goes in bit 5
   byte2 |= (isThrown ? 0x60 : 0x70); // State encoded in bit 4. Bit 6 is always high. Bit 5 is always high
   
-  Serial.print("Report: 0xB1, ");
-  Serial.print(byte1, HEX); Serial.print(", ");
+  Serial.print(F("Report: 0xB1, "));
+  Serial.print(byte1, HEX); Serial.print(F(", "));
   Serial.println(byte2, HEX);
   sendTXtoLN(OPC_SW_REP, byte1, byte2); // OPC_SW_REP -- Sensor Report    
 }

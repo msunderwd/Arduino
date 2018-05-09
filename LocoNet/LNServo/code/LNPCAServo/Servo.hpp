@@ -18,17 +18,17 @@ class Servo {
   unsigned int _address;
   unsigned int lockaddr;
   bool locked;
-  int index;
+  byte index;
 
  protected:
   float validateServoValue(float v); 
 
  public:
   Servo(void);
-  void configure(int idx, PCA9685 *driver, float clv = 0.0, float thv = 0.0, bool st = false);
+  void configure(byte idx, PCA9685 *driver, float clv = 0.0, float thv = 0.0, bool st = false);
   void initFromEEPROM(int addr, int laddr, float clv, float thv, bool st, bool lock);
   void setDriver(PCA9685 *d);
-  void setIndex(int i);
+  void setIndex(byte i);
   void throwServo(void);
   void closeServo(void);
   void toggle(void);

@@ -1,5 +1,5 @@
 #define EEPROM_BASE_ADDRESS 0 /* 2 bytes -- Decoder base address */
-#define EEPROM_BC_ADDRESS 2   /* 2 bytes -- Broadcast address */
+#define EEPROM_LOCK_ADDRESS 2   /* 2 bytes -- Lock address */
 #define EEPROM_SERVO_ADDR_BASE 4
 #define EEPROM_SERVO1_ADDR     4
 #define EEPROM_SERVO2_ADDR     6

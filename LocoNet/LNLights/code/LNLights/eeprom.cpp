@@ -74,7 +74,7 @@ void writeTimeToEEPROM(int addr, Time& t) {
 }
 //---------------------------------------------------------
 // Functions for handling LocoNet CVs (when/if implemented)
-
+/*
 unsigned int getDecoderCVAddressFromEEPROM() {
   return((EEPROM.read(EEPROM_CV_DECODER_ADDRESS_MSB) << 8) +  EEPROM.read(EEPROM_CV_DECODER_ADDRESS_LSB));
 }
@@ -86,5 +86,5 @@ void writeCVToEEPROM(int idx, byte val) {
 byte readCVFromEEPROM(int idx) {
   return(EEPROM.read(idx));
 }
-
+*/
 

@@ -23,7 +23,8 @@ void handleSerialInput() {
     LnPacket->data[3] = (byte) (checksum.toInt() & 0xFF);
     LnPacket->sz.command = 0xB0;
     serial_ln_message = true;
-    Serial.println("Opcode: " + opcode + " Data1: " + data1 + " Data2 " + data2 + " Chk: " + checksum);
+    Serial.print(F("Opcode: ")); Serial.print(opcode); Serial.print(F(" Data1: ")); Serial.print(data1);
+    Serial.print(F(" Data2 ")); Serial.print(data2); Serial.print(F(" Chk: ")); Serial.println(checksum);
     
   } else if (cmd.equals("C")) {
     // Adjust the CLOSED limit for one of the servos
@@ -33,7 +34,7 @@ void handleSerialInput() {
     //value = (value > MAX_SERVO_VALUE ? MAX_SERVO_VALUE : value);
     Servos[servo-1].setClosedVal(value);
     Servos[servo-1].closeServo();
-    Serial.println("Servo: " + String(servo) + " Value: " + String(value));
+    Serial.print(F("Servo: ")); Serial.print(servo); Serial.print(F(" Value: ")); Serial.println(value);
     
   } else if (cmd.equals("T")) {
     Serial.println(F("Received T Command (set thrown limit)"));
@@ -42,7 +43,7 @@ void handleSerialInput() {
     float value = Serial.readStringUntil(' ').toFloat();
     Servos[servo-1].setThrownVal(value);
     Servos[servo-1].throwServo();
-    Serial.println("Servo: " + String(servo) + " Value: " + String(value));
+    Serial.print(F("Servo: ")); Serial.print(servo); Serial.print(F(" Value: ")); Serial.println(value);
     
   } else if (cmd.equals("S")) {
     // Write servo limits to EEPROM
@@ -50,34 +51,41 @@ void handleSerialInput() {
     writeServoLimitsToEEPROM();
     Serial.println(F("Servo Limits stored to EEPROM."));
     
-  } else if (cmd.equals("A")) {
-    Serial.println(F("Setting address..."));
+  } else if (cmd.equals("TA")) {
+    Serial.println(F("Setting Turnout base address..."));
     base_address = Serial.readStringUntil(' ').toInt();
     for (int i = 0; i < NUM_SERVOS; i++) {
       Servos[i].setAddress(base_address + i);
-      Serial.println("Servo[" + String(i) + "].address = " + String(Servos[i].address()));
-      Servos[i].setLockAddress(base_address + i + NUM_SERVOS);
-      Serial.println("Servo[" + String(i) + "].lockAddress = " + String(Servos[i].lockAddress()));
+      Serial.print(F("Servo[")); Serial.print(i); Serial.print(F("].address = ")); Serial.println(Servos[i].address());
       
     }
 
     writeLNAddressToEEPROM(EEPROM_BASE_ADDRESS, base_address);
-    //writeAddressToEEPROM(EEPROM_SERVO_ADDR_BASE, base_address);
     writeServoAddressesToEEPROM();
-    Serial.println(" A = " + String(base_address));
+    Serial.print(F(" TA = ")); Serial.println(base_address);
+    
+  } else if (cmd.equals("LA")) {
+    Serial.println(F("Setting Lock base address..."));
+    base_address = Serial.readStringUntil(' ').toInt();
+    for (int i = 0; i < NUM_SERVOS; i++) {
+      Servos[i].setLockAddress(base_address + i);
+      Serial.print(F("Servo[")); Serial.print(i); Serial.print(F("].lockAddress = ")); Serial.println(Servos[i].lockAddress());
+    }
+
+    writeLNAddressToEEPROM(EEPROM_LOCK_ADDR_BASE, base_address);
+    writeServoAddressesToEEPROM();
+    Serial.print(F(" LA = ")); Serial.println(base_address);
     
   } else if (cmd.equals("c")) {
     int servo =  Serial.readStringUntil(' ').toInt();
     Serial.print(F("Close Turnout "));
-    Serial.println(String(servo));
-    //handleLNServoChange(base_address + servo-1, 0, false);
+    Serial.println(servo);
     doServoChange(servo-1, false);
     
   } else if (cmd.equals("t")) {
     int servo =  Serial.readStringUntil(' ').toInt();
     Serial.print(F("Throw Turnout "));
-    Serial.println(String(servo));
-    //handleLNServoChange(base_address + servo-1, 1, false);
+    Serial.println(servo);
     doServoChange(servo-1, true);
     
   } else if (cmd.equals("s")) {
@@ -94,7 +102,8 @@ void handleSerialInput() {
     Serial.println(F("C <servo> <value> : Set CLOSED state servo limit (0-255)"));
     Serial.println(F("T <servo> <value> : Set THROWN state servo limit (0-255)"));
     Serial.println(F("S : Store servo limits to EEPROM"));
-    Serial.println(F("A <address> : Set base LocoNet address (and by extension all addresses) for device"));
+    Serial.println(F("TA <address> : Set base LocoNet address (and by extension all addresses) for turnouts"));
+    Serial.println(F("LA <address> : Set base LocoNet address (and by extension all addresses) for locks"));
     Serial.println(F("c <servo> : CLOSE Servo"));
     Serial.println(F("t <servo> : THROW Servo"));
     Serial.println(F("s : Print status"));

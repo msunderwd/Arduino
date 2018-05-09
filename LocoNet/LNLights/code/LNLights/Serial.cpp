@@ -480,6 +480,8 @@ void printHelp(void) {
   Serial.println(F("\t\t<value> = \"true\", \"false\" (NOTE: <value> not specified for \"day\" or \"night\")"));
   Serial.println(F("\tFC <hours>:<mins> : Set the fast clock manually"));
   Serial.println(F("\t\t<hours>:<mins> = time to set clock"));
+  Serial.println(F("\tWD : Write defaults to EEPROM (factory reset)"));
+  Serial.println(F("\tH : This help message"));
   
 }
 

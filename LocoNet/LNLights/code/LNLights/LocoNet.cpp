@@ -61,7 +61,7 @@ void handleLocoNetInterface(lnMsg *Packet) {
     address_received = decodeLnAddress(Packet);
     //Serial.println("address_received = " + String(address_received));
     if ((!addressMatch(address_received)) && (Packet->data[0] != 0xEF)) {
-      Serial.print(F("Not ours. Ignoring. A =")); Serial.println(address_received);
+      //Serial.print(F("Not ours. Ignoring. A =")); Serial.println(address_received);
       return;
     }
     Serial.println(F("--------"));
@@ -89,9 +89,8 @@ void handleLocoNetInterface(lnMsg *Packet) {
         // D[2].5 (0x20) is CLOSE/THROW (1/0)
         // Normal operation.  Handle the request.
         printRXpacket(Packet);
-        Serial.println(F("State 0 - Received 0xB0 or BD : Handle lighting event"));
+        Serial.println(F("Received 0xB0 or BD : Handle lighting event"));
         // If 0xBD then send feedback. If 0xB0, do not.
-        // Assume servo and lock addresses are adjacent and monotonic.
         switch (address_received - base_address) {
           case 0:
             setPower(thrown);
@@ -186,22 +185,23 @@ void update_fast_clock(lnMsg *msg) {
   //fast_clock.hours = (256 - fcMsg->hours_24) % 24;
   fast_clock.hours = (fcMsg->hours_24 >= (128-24)) ? fcMsg->hours_24 - (128-24) : fcMsg->hours_24 % 24;
   fast_clock.days = fcMsg->days;
-  Serial.print("rate="); Serial.println(fast_clock.rate);
-  Serial.print("time="); Serial.print(fast_clock.hours); Serial.print(":");
-  Serial.print(fast_clock.mins); Serial.print(":"); Serial.println(fast_clock.frac);
+  Serial.print(F("rate=")); Serial.println(fast_clock.rate);
+  Serial.print(F("time=")); Serial.print(fast_clock.hours); Serial.print(F(":"));
+  Serial.print(fast_clock.mins); Serial.print(F(":")); Serial.println(fast_clock.frac);
   if (clock_mode == CLOCK_MODE_FASTCLOCK) {
     updateCurrentTime(true);
   }
 }
 
 unsigned int decodeLnAddress(lnMsg *msg) {
-
+  /*
+  // DEBUG
   Serial.print("decode data[1] = " + String(msg->data[1]));
   Serial.print(" data[2] = " + String(msg->data[2]));
   Serial.print(" d1 = " + String(msg->data[1] & 0x7F));
   Serial.println(" d2 = " + String(msg->data[2] & 0x0F));
   Serial.println("Final addr = " + String((msg->data[1] & 0x7F) + ((msg->data[2] & 0x0F) << 7)));
-
+*/
   // This is for received commands (e.g. Turnouts 0xB0, 0xBD)
   return ((msg->data[1] & 0x7F) + ((msg->data[2] & 0x0F) << 7) + 1);
   // This is for sent messages (e.g. Sensors 0xB2)
@@ -224,6 +224,7 @@ void printRXpacket (lnMsg *packet)
   Serial.println();
 }
 
+/*
 void sendLnCVReply(lnMsg *Packet, byte status, byte data) {
   // <CVH> includes Data bit 7 in its bit 2.
   // <DATA7> includes only bits 6-0 of the data
@@ -271,6 +272,7 @@ void sendLnCVReply(lnMsg *Packet, byte status, byte data) {
     Serial.println(F(" "));
   }
 }
+*/
 
 void sendTXtoLN (byte opcode, byte firstbyte, byte secondbyte)
 {
@@ -334,6 +336,7 @@ void sendTXtoLN2Byte (byte opcode, byte firstbyte)
   }
 */
 
+/*
 void write_cv(unsigned int cv, unsigned int data) {
   Serial.println("Writing to CV: " + String(cv) + " Val: " + String(data));
   switch (cv) {
@@ -372,7 +375,7 @@ byte read_cv(unsigned int cv) {
     case CV_DECODER_ADDRESS_MSB:
       val = readCVFromEEPROM(EEPROM_CV_DECODER_ADDRESS_MSB); break;
     case CV_ACC_DECODER_CONFIG:
-      val = 0x88; /* CV29 is read only, fixed value in this case */
+      val = 0x88; //CV29 is read only, fixed value in this case 
     case CV_HEAD1_FUNCTION:
       val = readCVFromEEPROM(EEPROM_CV_HEAD1_FUNCTION); break;
     case CV_HEAD2_FUNCTION:
@@ -398,5 +401,5 @@ byte read_cv(unsigned int cv) {
   Serial.print(val);
   return (val);
 }
-
+*/
 

@@ -46,6 +46,7 @@ void readServoDataFromEEPROM(int i) {
 
 // Write ALL of the relevant stuff for a single servo to EEPROM
 // Index assumed to start from 0
+// NOTE: THis is broken but unused.
 void writeServoDataToEEPROM(int i) {
   writeLNAddressToEEPROM(i, Servos[i].address());
   writeLNAddressToEEPROM(i, Servos[i].lockAddress());
@@ -65,7 +66,6 @@ void writeServoLimitsToEEPROM() {
 void writeServoStateToEEPROM(int servo) {
   // NOTE: Assumes servo numbering 0-7
   EEPROM.write(EEPROM_SERVO_STATE_BASE + (servo), Servos[servo].isThrown() ? 1 : 0);
-  //EEPROM.write(EEPROM_SERVO_STATE_BASE, servo_state);
 }
 
 void writeLockStateToEEPROM(int servo) {
@@ -84,7 +84,7 @@ void writeServoAddressesToEEPROM() {
 
 //---------------------------------------------------------
 // Functions for handling LocoNet CVs (when/if implemented)
-
+/*
 unsigned int getDecoderCVAddressFromEEPROM() {
   return((EEPROM.read(EEPROM_CV_DECODER_ADDRESS_MSB) << 8) +  EEPROM.read(EEPROM_CV_DECODER_ADDRESS_LSB));
 }
@@ -96,5 +96,5 @@ void writeCVToEEPROM(int idx, byte val) {
 byte readCVFromEEPROM(int idx) {
   return(EEPROM.read(idx));
 }
-
+*/
 

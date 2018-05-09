@@ -137,9 +137,8 @@ unsigned long lastTimeUpdate;
  */
 void configurePins() {
   // Set the current monitor input pin.
-  // imonitor = IMONITOR_PIN;
-  pinMode(12, INPUT);
-  pinMode(13, INPUT);
+  pinMode(12, INPUT); // SDA
+  pinMode(13, INPUT); // SCK
   pinMode(GPIO1_PIN, OUTPUT); // This will be the power ON signal to the PSU
   pinMode(GPIO2_PIN, INPUT_PULLUP); // This pin is (for now) unused.
   digitalWrite(PSU_CONTROL, PSU_OFF); // Default to master power OFF
@@ -202,7 +201,7 @@ void setup()
     printLightInfo(i);
   }
 
-  Serial.println("----");
+  Serial.println(F("----"));
   calcAddressFromCurrentTime();
   //Serial.flush();
 }
@@ -212,15 +211,40 @@ void printGlobalState(void) {
   Serial.print(F("\t"));
   Serial.println(base_address);
   Serial.print(F("Clock mode:      "));
-  Serial.println(String((clock_mode ? "Fast Clock" : "Static")));
+  if (clock_mode) {
+    Serial.println(F("Fast Clock"));
+  } else {
+    Serial.println(F("Static"));
+  }
+  //Serial.println(String((clock_mode ? "Fast Clock" : "Static")));
   Serial.print(F("Day/Night:       "));
-  Serial.println(String((day_night ? "Day" : "Night")));
+  if (day_night) {
+    Serial.println(F("Day"));
+  } else {
+    Serial.println(F("Night"));
+  }
+  //Serial.println(String((day_night ? "Day" : "Night")));
   Serial.print(F("Transition:      "));
-  Serial.println(String((transition_mode ? "Yes" : "No")));
+  if (transition_mode) {
+    Serial.println(F("Yes"));
+  } else {
+    Serial.println(F("No"));
+  }
+  //Serial.println(String((transition_mode ? "Yes" : "No")));
   Serial.print(F("Master Power:    "));
-  Serial.println(String((master_on ? "ON" : "OFF")));
+  if (master_on) {
+    Serial.println(F("ON"));
+  } else {
+    Serial.println(F("OFF"));
+  }
+  //Serial.println(String((master_on ? "ON" : "OFF")));
   Serial.print(F("Follow LN Power: "));
-  Serial.println(String((follow_ln ? "Follow" : "No Follow")));
+  if (follow_ln) {
+    Serial.println(F("Follow"));
+  } else {
+    Serial.println(F("No Follow"));
+  }
+  //Serial.println(String((follow_ln ? "Follow" : "No Follow")));
   Time sunrise = readTimeFromEEPROM(EEPROM_SUNRISE_START_TIME);
   Time sunset = readTimeFromEEPROM(EEPROM_SUNSET_START_TIME);
   Serial.print(F("Sunrise:         "));
@@ -320,7 +344,9 @@ void setDayNightMode(bool mode) {
     // Store the new state
     day_night = mode;
     writeGlobalStateToEEPROM();
-    Serial.println("Static Day/Night = " + String((day_night ? "DAY" : "NIGHT")));
+    Serial.print(F("Static Day/Night = "));
+    if (day_night) { Serial.println(F("DAY")); } else { Serial.println(F("NIGHT")); }
+    //Serial.println("Static Day/Night = " + String((day_night ? "DAY" : "NIGHT")));
 
     // If we are in static mode, update the lighting
     if (clock_mode == CLOCK_MODE_STATIC) {
@@ -382,10 +408,10 @@ int calcAddressFromCurrentTime() {
   sunset_end->addMinutes(sunset_increment * sunset_steps);
   Time* sunrise_end = new Time(sunrise_start);
   sunrise_end->addMinutes(sunrise_increment * sunrise_steps);
-  Serial.print("SR Start = " + sunrise_start.toStringHHMM());
-  Serial.print(" SR End = " + sunrise_end->toStringHHMM());
-  Serial.print(" SS Start = " + sunset_start.toStringHHMM());
-  Serial.println(" SS End = " + sunset_end->toStringHHMM());
+  Serial.print(F("SR Start = ")); Serial.print(sunrise_start.toStringHHMM());
+  Serial.print(F(" SR End = ")); Serial.print(sunrise_end->toStringHHMM());
+  Serial.print(F(" SS Start = ")); Serial.print(sunset_start.toStringHHMM());
+  Serial.print(F(" SS End = ")); Serial.println(sunset_end->toStringHHMM());
   Serial.flush();
   //return(EEPROM_DAY_SETTINGS);
 
@@ -565,11 +591,11 @@ void handleTransition(void) {
 
     // Figure out which table to look at and how many steps are in the table.
     if (day_night == STATIC_DAY) {
-      Serial.println("Using sunrise table");
+      Serial.println(F("Using sunrise table"));
       addr = EEPROM_SUNRISE_TABLE + transitionStep*sizeof(led_t);
       steps = EEPROM.read(EEPROM_SUNRISE_STEPS);
     } else {
-      Serial.println("Using sunset table");
+      Serial.println(F("Using sunset table"));
       addr = EEPROM_SUNSET_TABLE + transitionStep*sizeof(led_t);
       steps = EEPROM.read(EEPROM_SUNSET_STEPS);
     }
@@ -578,15 +604,15 @@ void handleTransition(void) {
     for (int i =0; i < NUM_LIGHTS; i++) {
       //readLightDataFromEEPROM(addr, lights+i);
       if (day_night == STATIC_DAY) {
-        lights[i].red = default_sunrise[transitionStep][0];
-        lights[i].green = default_sunrise[transitionStep][1];
-        lights[i].blue = default_sunrise[transitionStep][2];
-        lights[i].white = default_sunrise[transitionStep][3];
+        lights[i].red = default_sunrise[transitionStep][RED];
+        lights[i].green = default_sunrise[transitionStep][GREEN];
+        lights[i].blue = default_sunrise[transitionStep][BLUE];
+        lights[i].white = default_sunrise[transitionStep][WHITE];
       } else {
-        lights[i].red = default_sunset[transitionStep][0];
-        lights[i].green = default_sunset[transitionStep][1];
-        lights[i].blue = default_sunset[transitionStep][2];
-        lights[i].white = default_sunset[transitionStep][3];
+        lights[i].red = default_sunset[transitionStep][RED];
+        lights[i].green = default_sunset[transitionStep][GREEN];
+        lights[i].blue = default_sunset[transitionStep][BLUE];
+        lights[i].white = default_sunset[transitionStep][WHITE];
       }
       if (i==0) {
         Serial.print(F("Transition ("));
@@ -622,10 +648,10 @@ void loadDefaultSunrise(void) {
   led_t p;
   EEPROM.write(EEPROM_SUNRISE_STEPS, DEFAULT_TABLE_LENGTH);
   for (int i = 0; i < DEFAULT_TABLE_LENGTH; i++) {
-    p.red = default_sunrise[i][0];
-    p.green = default_sunrise[i][1];
-    p.blue = default_sunrise[i][2];
-    p.white = default_sunrise[i][3];
+    p.red = default_sunrise[i][RED];
+    p.green = default_sunrise[i][GREEN];
+    p.blue = default_sunrise[i][BLUE];
+    p.white = default_sunrise[i][WHITE];
     writeLightDataToEEPROM(EEPROM_SUNRISE_TABLE + (i*sizeof(led_t)), &p);
   }
 }
@@ -634,10 +660,10 @@ void loadDefaultSunset(void) {
   led_t p;
   EEPROM.write(EEPROM_SUNSET_STEPS, DEFAULT_TABLE_LENGTH);
   for (int i = 0; i < DEFAULT_TABLE_LENGTH; i++) {
-    p.red = default_sunset[i][0];
-    p.green = default_sunset[i][1];
-    p.blue = default_sunset[i][2];
-    p.white = default_sunset[i][3];
+    p.red = default_sunset[i][RED];
+    p.green = default_sunset[i][GREEN];
+    p.blue = default_sunset[i][BLUE];
+    p.white = default_sunset[i][WHITE];
     writeLightDataToEEPROM(EEPROM_SUNSET_TABLE + (i*sizeof(led_t)), &p);
   }
 }

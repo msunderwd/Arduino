@@ -4,7 +4,7 @@
 
 
 Servo::Servo() {
-  int index = 0;
+  index = 0;
   driver = NULL;
   closed_val = 0.0;
   thrown_val = 0.0;
@@ -15,11 +15,11 @@ void Servo::setDriver(PCA9685 *d) {
   driver = d;
 }
 
-void Servo::setIndex(int i) {
+void Servo::setIndex(byte i) {
   index = i;
 }
 
-void Servo::configure(int idx, PCA9685 *d, float clv, float thv, bool st) {
+void Servo::configure(byte idx, PCA9685 *d, float clv, float thv, bool st) {
   index = idx;
   driver = d;
   if (clv > MAX_SERVO_VALUE) { clv = MAX_SERVO_VALUE; }

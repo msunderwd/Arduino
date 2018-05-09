@@ -26,6 +26,7 @@ EXTERN int default_sunrise[DEFAULT_TABLE_LENGTH][4] = {
   { 255, 153,  51, 64 },
 };
 
+/*
 EXTERN int sunrise_table[32][4] = {
   { 255, 190, 56, 248},
   { 255, 190, 56, 241},
@@ -60,5 +61,6 @@ EXTERN int sunrise_table[32][4] = {
   { 65, 68, 83, 38},
   { 65, 68, 83, 31}
 };
+*/
 
 #endif // COLORS_H

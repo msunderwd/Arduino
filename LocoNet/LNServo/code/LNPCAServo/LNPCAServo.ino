@@ -47,11 +47,6 @@
 
 #define LN_TX_PIN 6
 
-// NOTE: Always BOARD_MODE_SERVO
-#define BOARD_MODE_SERVO 0
-#define BOARD_MODE_SIGNAL 1
-#define BOARD_MODE BOARD_MODE_SERVO
-
 // Set this to allow sending LocoNet commands over the serial interface.
 // Otherwise the "LN" Serial command will do nothing.
 #define SERIAL_EMULATE_LN 0
@@ -65,13 +60,14 @@
 #define GLOBALS_GO_HERE 1
 #include "pinout.h"
 #include "config.h"
-#include "Serial.hpp"
 #include "LocoNet.hpp"
 #include "eeprom.hpp"
 #include "eemap.h"
 #include "globals.h"
 #include "lnaddr.h"
 #include "Servo.hpp"
+
+extern void handleSerialInput();
 
 // PCA9685 devoce
 PCA9685 pwmController(Wire, PCA9685_PhaseBalancer_Weaved);
@@ -103,10 +99,9 @@ void setup()
 
   // Configure the serial port for 57600 baud
   Serial.begin(57600);
+  Serial.println(F("LNPCAServo"));
+  Serial.flush();
   
-  // Update Servo settings from EEPROM
-  //initServosFromEEPROM();
-
   // Initialize LocoNet interface. Note that with the official Arduino library
   // you can't choose the TX pin.
   LocoNet.init(LN_TX_PIN);
@@ -122,7 +117,7 @@ void setup()
   pwmController.resetDevices();
   pwmController.init(B000001);
   pwmController.setPWMFrequency(50);
-  for (int i = 0; i < NUM_SERVOS; i++) {
+  for (byte i = 0; i < NUM_SERVOS; i++) {
     pwmController.setChannelPWM(i, 128 << 4);
     Servos[i].setDriver(&pwmController);
     Servos[i].setIndex(i);
@@ -131,12 +126,12 @@ void setup()
 
   // Print information to the Serial port
   Serial.println(F("Ciao Bello!"));
-  Serial.print(F("decoder address"));
-  Serial.print(F("\t"));
+  //Serial.print(F("decoder address"));
+  //Serial.print(F("\t"));
   //Serial.println(base_address);
-  Serial.print(F("broadcast address"));
-  Serial.print(F("\t"));
-  Serial.println(broadcast);
+  //Serial.print(F("broadcast address"));
+  //Serial.print(F("\t"));
+  //Serial.println(broadcast);
   for (int i = 0; i < NUM_SERVOS; i++) {
     printServoInfo(i);
   }
@@ -150,9 +145,9 @@ void printServoInfo(int servo) {
   Serial.print(F("\tLock address:\t"));
   Serial.println(Servos[servo].lockAddress());
   Serial.print(F("\tLimits: C="));
-  Serial.print(String(Servos[servo].closedVal()));
+  Serial.print(Servos[servo].closedVal());
   Serial.print(F(" T="));
-  Serial.println(String(Servos[servo].thrownVal()));
+  Serial.println(Servos[servo].thrownVal());
 }
 
 void loop()
@@ -185,8 +180,13 @@ void doServoChange(byte servo, bool thrown) {
     return;
   }
   // This is a servo change.
-  Serial.print("Servo " + String(servo) + (thrown ? " THROWN" : " CLOSED"));
-  Serial.println(" val = " + String(thrown ? Servos[servo].thrownVal() : Servos[servo].closedVal()));
+  Serial.print(F("Servo ")); Serial.print(servo+1);
+  if (thrown) { 
+      Serial.print(F(" THROWN val = ")); Serial.println(Servos[servo].thrownVal()); 
+  } else { 
+    Serial.print(F(" CLOSED val = ")); Serial.println(Servos[servo].closedVal()); 
+  }
+  if (thrown)Serial.println(thrown ? Servos[servo].thrownVal() : Servos[servo].closedVal());
   // Only take action if this is actually a state change (ignore repeated commands to the same state)
   if (thrown != Servos[servo].isThrown()) {
     Servos[servo].setThrown(thrown);
@@ -200,7 +200,8 @@ void doServoChange(byte servo, bool thrown) {
  */
 void handleLNServoChange(unsigned int servoaddr, uint8_t data2, bool ack) {
   byte index = 0;
-  Serial.println("handleLNServoChange() servo=" + String(servoaddr) + " data2=" + String(data2) + " ack=" + String(ack));
+  Serial.print(F("handleLNServoChange() servo=")); Serial.print(servoaddr);
+  Serial.print(F(" data2=")); Serial.print(data2); Serial.print(F(" ack=")); Serial.println(ack);
 
   // First, find the Servo we are addressing.
   for (index = 0; index < NUM_SERVOS; index++) {
@@ -209,7 +210,7 @@ void handleLNServoChange(unsigned int servoaddr, uint8_t data2, bool ack) {
   // Oops. We didn't find it. Return.
   if (index == NUM_SERVOS) { return; }
 
-  Serial.println("servo index = " + String(index));
+  Serial.print(F("servo index = ")); Serial.println(index);
   
   // D[2].4 (0x10) is ON/OFF (1/0)
   // D[2].5 (0x20) is CLOSE/THROW (1/0)
@@ -218,20 +219,19 @@ void handleLNServoChange(unsigned int servoaddr, uint8_t data2, bool ack) {
   }
   
   if (true) {
-    //sendTXtoLN(0xB4, (ack ? 0x3D : 0x30), 0x7F);
     reportTurnoutState(servoaddr, Servos[index].isThrown());
   }
 }
 
 void handleLockChange(unsigned int lockaddr, uint8_t data2, bool ack) {
-  //byte index = lockaddr - lock1_address;
   bool locked = (data2 & 0x20 == 0x20);
   byte index = 0;
   for (index = 0; index < NUM_SERVOS; index++) {
     if (Servos[index].lockAddress() == lockaddr) { break; }
   }
   if (index == NUM_SERVOS) { return; }
-  Serial.println("Lock " + String(index) + (locked ? " LOCKED" : " UNLOCKED"));
+  Serial.print(F("Lock ")); Serial.print(index+1);
+  if (locked) { Serial.println(F(" LOCKED")); } else { Serial.println(F(" UNLOCKED")); }
   bool oldv = Servos[index].isLocked();
   Servos[index].setLocked(locked);
   if (oldv != locked) {
@@ -239,7 +239,6 @@ void handleLockChange(unsigned int lockaddr, uint8_t data2, bool ack) {
   }
 
   if (ack && true) {
-    sendTXtoLN(0xB4, (ack ? 0x3D : 0x30), 0x7F);
     reportTurnoutState(lockaddr, Servos[index].isLocked());
   }
 }

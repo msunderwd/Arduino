@@ -21,10 +21,10 @@ EXTERN byte imonitor;
 EXTERN byte stato;
 
 // Current versions of addresses
-EXTERN unsigned int decoder_cv_address;
-EXTERN unsigned int broadcast;
+//EXTERN unsigned int decoder_cv_address;
+//EXTERN unsigned int address_received;
+//EXTERN unsigned int broadcast;
 //EXTERN unsigned int base_address;
-EXTERN unsigned int address_received;
 //EXTERN unsigned int servo1_address;
 //EXTERN unsigned int servo2_address;
 //EXTERN unsigned int servo3_address;
@@ -33,7 +33,7 @@ EXTERN unsigned int address_received;
 //EXTERN unsigned int lock2_address;
 //EXTERN unsigned int lock3_address;
 //EXTERN unsigned int lock4_address;
-EXTERN unsigned int sensor_base_address;
+//EXTERN unsigned int sensor_base_address;
 
 
 #define SERVO_CLOSED 1
@@ -50,8 +50,8 @@ EXTERN unsigned int sensor_base_address;
 #define SW_RESPONSE_OPCODE 0xB4
 
 #ifndef LNSERVO_INO
-extern byte servo_state;
-extern byte servo_limits[NUM_SERVOS][2];
+//extern byte servo_state;
+//extern byte servo_limits[NUM_SERVOS][2];
 #endif
 
 // LocoNet Message Buffers
